@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Yousuf's AI</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 25%, #a18cd1 50%, #fbc2eb 75%, #8fd3f4 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+  }
+
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  .chat-container {
+    width: 100%;
+    max-width: 480px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    display: flex;
+    flex-direction: column;
+    height: 680px;
+    overflow: hidden;
+    border: 3px solid rgba(255,255,255,0.5);
+  }
+
+  .chat-header {
+    background: linear-gradient(120deg, #ff6a88, #ff99ac, #6a5acd);
+    background-size: 200% 200%;
+    animation: gradientShift 6s ease infinite;
+    color: white;
+    padding: 22px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .chat-header .avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+
+  .chat-header .title {
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 0.3px;
+  }
+
+  .chat-header .subtitle {
+    font-size: 12px;
+    opacity: 0.9;
+  }
+
+  .chat-messages {
+    flex: 1;
+    padding: 18px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: linear-gradient(180deg, #fef6ff 0%, #f0f9ff 100%);
+  }
+
+  .message {
+    max-width: 78%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    line-height: 1.45;
+    font-size: 15px;
+    white-space: pre-wrap;
+    animation: pop 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+
+  @keyframes pop {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .user {
+    align-self: flex-end;
+    background: linear-gradient(135deg, #6a5acd, #8a7ee8);
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+
+  .bot {
+    align-self: flex-start;
+    background: linear-gradient(135deg, #ffe29f, #ffa99f);
+    color: #3a2e2e;
+    border-bottom-left-radius: 4px;
+    font-weight: 500;
+  }
+
+  .chat-input {
+    display: flex;
+    padding: 14px;
+    gap: 10px;
+    background: white;
+    border-top: 1px solid #f0e6ff;
+  }
+
+  .chat-input input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #e5d4ff;
+    border-radius: 999px;
+    outline: none;
+    font-size: 15px;
+    transition: border-color 0.2s;
+  }
+
+  .chat-input input:focus {
+    border-color: #a18cd1;
+  }
+
+  .chat-input button {
+    background: linear-gradient(135deg, #ff6a88, #6a5acd);
+    color: white;
+    border: none;
+    padding: 0 24px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 600;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .chat-input button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 14px rgba(106, 90, 205, 0.4);
+  }
+
+  .chat-input button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .chat-messages::-webkit-scrollbar {
+    width: 8px;
+  }
+  .chat-messages::-webkit-scrollbar-thumb {
+    background: #d8c4f7;
+    border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="chat-container">
+  <div class="chat-header">
+    <div class="avatar">✨</div>
+    <div>
+      <div class="title">Yousuf's AI</div>
+      <div class="subtitle">Always here to help</div>
+    </div>
+  </div>
+  <div class="chat-messages" id="messages"></div>
+  <div class="chat-input">
+    <input type="text" id="userInput" placeholder="Ask me anything..." />
+    <button id="sendBtn">Send</button>
+  </div>
+</div>
+
+<script>
+  // ⚠️ Change this if your backend runs somewhere other than localhost:3000
+  const BACKEND_URL = "https://yousuf-ai-backend.vercel.app/api/chat";
+  const messagesEl = document.getElementById("messages");
+  const inputEl = document.getElementById("userInput");
+  const sendBtn = document.getElementById("sendBtn");
+
+  function addMessage(text, sender) {
+    const div = document.createElement("div");
+    div.className = "message " + sender;
+    div.textContent = text;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    return div;
+  }
+
+  // Friendly welcome message
+  addMessage("Hey! I'm Yousuf's AI 👋 What's on your mind today?", "bot");
+
+  async function sendMessage() {
+    const text = inputEl.value.trim();
+    if (!text) return;
+
+    addMessage(text, "user");
+    inputEl.value = "";
+    sendBtn.disabled = true;
+
+    const thinkingBubble = addMessage("Thinking...", "bot");
+
+    try {
+      const res = await fetch(BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text }),
+      });
+      const data = await res.json();
+      thinkingBubble.textContent = data.reply || "Sorry, something went wrong.";
+    } catch (err) {
+      thinkingBubble.textContent = "⚠️ Could not reach the chatbot backend. Is it running?";
+    } finally {
+      sendBtn.disabled = false;
+    }
+  }
+
+  sendBtn.addEventListener("click", sendMessage);
+  inputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") sendMessage();
+  });
+</script>
+
+</body>
+</html>
